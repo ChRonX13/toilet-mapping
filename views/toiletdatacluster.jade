@@ -1,0 +1,294 @@
+html
+  head
+  title #{title}
+  meta(charset='utf-8')
+  meta(name='viewport', content='width=device-width, initial-scale=1.0')
+  link(rel='stylesheet', href='/stylesheets/style.css')
+  link(rel='stylesheet', href='/stylesheets/leaflet.css')
+  link(rel='stylesheet', href='/stylesheets/l.geosearch.css')
+  link(rel='stylesheet', href='/stylesheets/MarkerCluster.css')
+  link(rel='stylesheet', href='/stylesheets/MarkerCluster.Default.css')
+  link(rel='stylesheet', href='/stylesheets/Control.MiniMap.css')
+  //if lte IE 8
+    link(rel='stylesheet', href='/stylesheets/leaflet.ie.css')
+  style.
+    #map {
+    padding: 0;
+    height: 90%;
+    }
+  body(onload='parseResponse();')
+  h1= title
+  #map
+  script(src='/javascripts/leaflet.js')
+  script(src='/javascripts/jquery-1.10.2.min.js')
+  script(src='/javascripts/leaflet.markercluster.js')
+  script(src='/javascripts/l.control.geosearch.js')
+  script(src='/javascripts/leaflet.active-layers.min.js')
+  script(src='/javascripts/l.geosearch.provider.google.js')
+  script(src='/javascripts/Control.MiniMap.js')
+  script(src='/javascripts/mapquest.js')
+  script(type='text/javascript', src='/javascripts/toilet_data.js')
+  script(type='text/javascript').
+
+      // set our image path as we don't conform to convention of Leaflet structure
+      L.Icon.Default.imagePath = '/images';
+
+      var mapquestUrl = 'http://otile4.mqcdn.com/tiles/1.0.0/osm/{z}/{x}/{y}.png';
+      var mapquestSatUrl = 'http://otile1.mqcdn.com/tiles/1.0.0/sat/{z}/{x}/{y}.png'
+      var mapQuestAttribution = '&copy; <a href="www.openstreetmap.org/copyright">OpenStreetMap</a>';
+  
+      var maleLabel = 'Male Toilets';
+      var femaleLabel = 'Female Toilets';
+
+      // set our styles for the different type of map
+      var dayStyleId = 22677;
+      var nightStyleId = 999;
+
+      // create our layers
+      var dayLayer = L.tileLayer(mapquestUrl, { attribution : mapQuestAttribution, styleId : dayStyleId});
+      var nightLayer = L.tileLayer(mapquestUrl, { attribution : mapQuestAttribution, styleId : nightStyleId});
+      var satLayer = L.tileLayer(mapquestSatUrl, { attribution : mapQuestAttribution, styleId : nightStyleId});
+      var trainStation = new L.LayerGroup();
+      var foodOutlet = new L.LayerGroup();
+      var busStation = new L.LayerGroup();
+      var other = new L.LayerGroup();
+      var parkReserve = new L.LayerGroup();
+      var caravanPark = new L.LayerGroup();
+      var serviceStation = new L.LayerGroup();
+      var carpark = new L.LayerGroup();
+      var airport = new L.LayerGroup();
+      var shoppingCentre = new L.LayerGroup();
+      var campingGround = new L.LayerGroup();
+      var sportingFacility = new L.LayerGroup();
+
+      var actualData = new L.MarkerClusterGroup();
+
+      // create our map object
+      var map = L.map('map', {center: new L.LatLng(-31.9522, 115.8589), zoom: 13, layers: [dayLayer, 
+                                                                                          trainStation, 
+                                                                                          foodOutlet, 
+                                                                                          busStation, 
+                                                                                          other, 
+                                                                                          parkReserve, 
+                                                                                          caravanPark, 
+                                                                                          serviceStation, 
+                                                                                          carpark, 
+                                                                                          airport, 
+                                                                                          shoppingCentre, 
+                                                                                          campingGround, 
+                                                                                          sportingFacility
+      ]});
+
+      // set our base maps
+      var baseMaps = { "Day View" : dayLayer, "Satellite View" : satLayer};
+
+      // parse the GET response from the server with the location data
+      function parseResponse() {
+        for (var i = 0; i < toiletData.length; i++) {
+          var a = toiletData[i];
+          var title = a.address;
+
+          // create the marker itself
+          var marker = L.marker(new L.LatLng(a.latitude, a.longitude), { title: title });
+
+          // now create the text of what happens when you click the marker and popup
+          marker.bindPopup("<b>" + title + "</b><br><b>Male:</b> " + a.male + "<br><b>Female:</b> " + a.female + "<br><b>Type:</b> " + a.facilitytype);
+
+          // default so add all
+          marker.addTo(actualData);
+        }
+      }
+
+      // set the overlay layers
+      var overlays = {'Train station' : trainStation, 
+                      'Food outlet' : foodOutlet, 
+                      'Bus station' : busStation, 
+                      'Other' : other, 
+                      'Park or reserve' : parkReserve, 
+                      'Caravan park' : caravanPark, 
+                      'Service station' : serviceStation, 
+                      'Car park' : carpark, 
+                      'Airport' : airport, 
+                      'Shopping centre' : shoppingCentre, 
+                      'Camping ground' : campingGround, 
+                      'Sporting facility' : sportingFacility
+                      };
+
+      // add the control to the map so people can interact with it
+      var control = L.control.activeLayers(baseMaps, overlays).addTo(map);
+
+      // setup our listeners for when someone changes the overlay
+      map.on('overlayadd', function(e) {
+        updateMap();
+      });
+
+      // setup our listeners for when someone changes the overlay
+      map.on('overlayremove', function(e) {
+        updateMap();
+      });
+
+      function updateMap() {
+        var overlayLayers = control.getActiveOverlayLayers();
+        var trainStationFlag = false;
+        var foodOutletFlag = false;
+        var busStationFlag = false;
+        var otherFlag = false;
+        var parkReserveFlag = false;
+        var caravanParkFlag = false;
+        var serviceStationFlag = false;
+        var carparkFlag = false;
+        var airportFlag = false;
+        var shoppingCentreFlag = false;
+        var campingGroundFlag = false;
+        var sportingFacilityFlag = false;
+
+        for (var overlayId in overlayLayers) {
+          switch(overlayLayers[overlayId].name)
+          {
+            case 'Train station': 
+              trainStationFlag = true;
+              break;
+            case 'Food outlet': 
+              foodOutletFlag = true;
+              break;
+            case 'Bus station': 
+              busStationFlag = true;
+              break;
+            case 'Other': 
+              otherFlag = true;
+              break;
+            case 'Park or reserve': 
+              parkReserveFlag = true;
+              break;
+            case 'Caravan park': 
+              carparkFlag = true;
+              break;
+            case 'Service station': 
+              serviceStationFlag = true;
+              break;
+            case 'Car park': 
+              carparkFlag = true;
+              break;
+            case 'Airport': 
+              airportFlag = true;
+              break;
+            case 'Shopping centre': 
+              shoppingCentreFlag = true;
+              break;
+            case 'Camping ground': 
+              campingGroundFlag = true;
+              break;
+            case 'Sporting facility': 
+              sportingFacilityFlag = true;
+              break;
+          }
+        }
+
+        map.removeLayer(actualData);
+        actualData.clearLayers();
+
+        for (var i = 0; i < toiletData.length; i++) {
+          var a = toiletData[i];
+          var title = a.address;
+
+          // create the marker itself
+          var marker = L.marker(new L.LatLng(a.latitude, a.longitude), { title: title });
+
+          // now create the text of what happens when you click the marker and popup
+          marker.bindPopup("<b>" + title + "</b><br><b>Male:</b> " + a.male + "<br><b>Female:</b> " + a.female + "<br><b>Type:</b> " + a.facilitytype);
+
+          // default so add all
+          if ((trainStationFlag && a.facilitytype == 'Train station') ||
+              (foodOutletFlag && a.facilitytype == 'Food outlet') ||
+              (busStationFlag && a.facilitytype == 'Bus station') ||
+              (otherFlag && a.facilitytype == 'Other') ||
+              (otherFlag && a.facilitytype == 'null') ||
+              (parkReserveFlag && a.facilitytype == 'Park or reserve') ||
+              (caravanParkFlag && a.facilitytype == 'Caravan park') ||
+              (serviceStationFlag && a.facilitytype == 'Service station') ||
+              (carparkFlag && a.facilitytype == 'Car park') ||
+              (airportFlag && a.facilitytype == 'Airport') ||
+              (shoppingCentreFlag && a.facilitytype == 'Shopping centre') ||
+              (campingGroundFlag && a.facilitytype == 'Camping ground') ||
+              (sportingFacilityFlag && a.facilitytype == 'Sporting facility')) {
+            marker.addTo(actualData);
+          }
+        }        
+        map.addLayer(actualData);
+      }
+
+      // add a address search control
+      new L.Control.GeoSearch({
+        provider: new L.GeoSearch.Provider.Google(),
+        position: 'topcenter',
+        showMarker: true
+      }).addTo(map);
+
+      // make sure we don't get in trouble for using the data!
+      map.attributionControl
+          .addAttribution('Toilet map data © <a href="http://data.gov.au/dataset/national-public-toilet-map">data.gov.au</a>');
+
+      map.addLayer(actualData);
+
+      // create me a minimap!
+      var dayMini = L.tileLayer(mapquestUrl, { attribution : mapQuestAttribution, styleId : dayStyleId, minZoom: 5, maxZoom: 13});
+      var satLayer = L.tileLayer(mapquestSatUrl, { attribution : mapQuestAttribution, styleId : nightStyleId, minZoom: 5, maxZoom: 13});
+      var dayMiniMap = new L.Control.MiniMap(dayMini, { toggleDisplay: true }).addTo(map);
+      var nightMiniMap = new L.Control.MiniMap(nightMini, { toggleDisplay: true })
+
+      var dayMiniActive = true;
+      var nightMiniActive = false;
+
+      // update the minimap based on the active base layer
+      map.on('baselayerchange', function(e) {
+
+          switch (control.getActiveBaseLayer().name)
+          {
+            case 'Night View':
+              if (dayMiniActive) {
+                map.removeControl(dayMiniMap);
+                dayMiniActive = false;
+              }
+
+              if (!nightMiniActive) {
+                map.addControl(nightMiniMap);
+                nightMiniActive = true;
+              }
+              break;
+            case 'Day View':
+              if (nightMiniActive) {
+                map.removeControl(nightMiniMap);
+                nightMiniActive = false;
+              }
+
+              if (!dayMiniActive) {
+                map.addControl(dayMiniMap);
+                dayMiniActive = true;
+              }
+              break;
+        }
+      });
+
+      // add geo location awareness
+      map.locate({setView: true, maxZoom: 16});
+
+      function onLocationFound(e) {
+      var radius = e.accuracy / 2;
+
+      L.marker(e.latlng).addTo(map)
+          .bindPopup("You are within " + radius + " meters from this point").openPopup();
+
+      L.circle(e.latlng, radius).addTo(map);
+      }
+
+      map.on('locationfound', onLocationFound);
+
+      // add a circle around the popup that is chosen to illustrate 'range'
+      var circle;
+      map.on('popupopen', function(e) {
+        circle = L.circle(e.popup.getLatLng(), 500).addTo(map);
+      });
+
+      map.on('popupclose', function(e) {
+        map.removeLayer(circle);
+      });
